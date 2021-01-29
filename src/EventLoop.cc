@@ -3,15 +3,22 @@
 //
 
 #include "EventLoop.hh"
+#include "Channel.hh"
+#include "Poller.hh"
+#include "fmt/ostream.h"
+#include "spdlog/spdlog.h"
 #include <poll.h>
 using namespace PD;
-
+constexpr int kPollTimeoutMS = 2'000;
 static thread_local EventLoop *loopInThisThread = nullptr;
-EventLoop::EventLoop() : tid_(std::this_thread::get_id()), looping_(false) {
+EventLoop::EventLoop()
+    : tid_(std::this_thread::get_id()), looping_(false), quit_(false),
+      poller_(std::make_unique<Poller>(this)) {
   spdlog::info("Loop is created in the tid {}\n", tid_);
   if (loopInThisThread) {
-    spdlog::error("Another loop {} is in this thread {}!",
+    spdlog::error("Another loop {} is in this thread {}! Abort!",
                   (uint64_t)loopInThisThread, tid_);
+    std::abort();
   } else {
     loopInThisThread = this;
   }
@@ -27,7 +34,13 @@ void EventLoop::run() {
   assert(!looping_);
   assert_in_thread();
   looping_ = true;
-  ::poll(NULL, 0, 5 * 1000);
+  quit_ = false;
+  while (!quit_) {
+    poller_->poll(kPollTimeoutMS, active_channels_);
+    for (const auto &ch : active_channels_) {
+      ch->handle_events();
+    }
+  }
   spdlog::info("loop {} stop looping!", (uint64_t)this);
   looping_ = false;
 }
@@ -45,3 +58,9 @@ void EventLoop::assert_in_thread() const {
   if (!is_in_thread())
     abort_not_in_thread();
 }
+void EventLoop::update_channel(Channel *channel) {
+  assert(channel->ownerLoop() == this);
+  assert_in_thread();
+  poller_->update_channel(channel);
+}
+void EventLoop::quit() { quit_ = true; }

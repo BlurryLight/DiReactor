@@ -3,8 +3,6 @@
 //
 
 #pragma once
-#include "fmt/ostream.h"
-#include "spdlog/spdlog.h"
 namespace PD {
 class Noncopyable {
 public:
