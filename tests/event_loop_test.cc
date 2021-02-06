@@ -5,22 +5,18 @@
 #include "EventLoop.hh"
 #include <future>
 
-// TEST(EventLoopTests, loopInThread) {
-//  auto threadfunc = []() {
-//    PD::EventLoop loop;
-//    loop.run();
-//    loop.quit();
-//    return std::make_pair(std::this_thread::get_id(), loop.tid_);
-//  };
-//  auto res_future = std::async(std::launch::async, threadfunc);
-//  PD::EventLoop loop;
-//  loop.run();
-//  EXPECT_EQ(loop.tid_, std::this_thread::get_id());
-//  auto res = res_future.get();
-//  EXPECT_EQ(res.first, res.second);
-//  EXPECT_NE(res.first, loop.tid_);
-//  loop.quit();
-//}
+TEST(EventLoopTests, loopInThread) {
+  auto threadfunc = []() {
+    PD::EventLoop loop;
+    return std::make_pair(std::this_thread::get_id(), loop.tid_);
+  };
+  auto res_future = std::async(std::launch::async, threadfunc);
+  PD::EventLoop loop;
+  EXPECT_EQ(loop.tid_, std::this_thread::get_id());
+  auto res = res_future.get();
+  EXPECT_EQ(res.first, res.second);
+  EXPECT_NE(res.first, loop.tid_);
+}
 
 TEST(EventLoopTests, loopInOtherThread) {
   PD::EventLoop loop;
