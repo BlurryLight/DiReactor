@@ -1,6 +1,7 @@
 #include "fmt/ostream.h"
 #include "spdlog/spdlog.h"
 #include "gtest/gtest.h"
+#include <chrono>
 #define GTEST_UNIT_TEST
 #include "EventLoop.hh"
 #include <future>
@@ -31,4 +32,61 @@ TEST(EventLoopTests, MultiLoopsInOneThread) {
   PD::EventLoop loop;
   ASSERT_DEATH({ PD::EventLoop loop2; }, "");
   // will abort
+}
+
+TEST(EventLoopTests, TimerQueueRunEvery) {
+  PD::EventLoop loop;
+  int cnt = 0;
+  auto func = [&]() {
+    spdlog::info("cnt: {}", ++cnt);
+    if (cnt >= 3) {
+      loop.quit();
+    }
+  };
+  loop.runEvery(1.0, func);
+  loop.run();
+  EXPECT_EQ(cnt, 3);
+}
+
+TEST(EventLoopTests, TimerQueueRunAfter) {
+  PD::EventLoop loop;
+  decltype(std::chrono::system_clock::now()) ts;
+  auto func = [&]() {
+    ts = std::chrono::system_clock::now();
+    loop.quit();
+  };
+  auto start = std::chrono::system_clock::now();
+  loop.runAfter(1.23456, func); // happen after 1.23456s
+  loop.run();
+  // happens > 1234 ms  < 1235 ms
+  EXPECT_GE(
+      std::chrono::duration_cast<std::chrono::milliseconds>(ts - start).count(),
+      1234);
+  EXPECT_LE(
+      std::chrono::duration_cast<std::chrono::milliseconds>(ts - start).count(),
+      1235);
+  spdlog::info("run after {} ms!",
+               std::chrono::duration_cast<std::chrono::milliseconds>(ts - start)
+                   .count());
+}
+TEST(EventLoopTests, TimerQueueRunAt) {
+  PD::EventLoop loop;
+  decltype(std::chrono::system_clock::now()) ts;
+  auto func = [&]() {
+    ts = std::chrono::system_clock::now();
+    loop.quit();
+  };
+  auto start = std::chrono::system_clock::now();
+  auto expected = start + std::chrono::milliseconds{789}; // happen after 789ms
+  loop.runAt(expected, func);
+  loop.run();
+  EXPECT_GE(
+      std::chrono::duration_cast<std::chrono::milliseconds>(ts - start).count(),
+      788);
+  EXPECT_LE(
+      std::chrono::duration_cast<std::chrono::milliseconds>(ts - start).count(),
+      790);
+  spdlog::info("run after {} ms!",
+               std::chrono::duration_cast<std::chrono::milliseconds>(ts - start)
+                   .count());
 }

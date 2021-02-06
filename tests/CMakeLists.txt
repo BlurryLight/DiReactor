@@ -10,6 +10,8 @@ set(BASE_LIST
         ../src/EventLoop.cc
         ../src/Channel.cc
         ../src/Poller.cc
+        ../src/TimerQueue.cc
+        ../src/Timer.cc
         )
 set(TESTS_LIST
         # empty

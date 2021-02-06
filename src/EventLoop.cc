@@ -5,15 +5,20 @@
 #include "EventLoop.hh"
 #include "Channel.hh"
 #include "Poller.hh"
+#include "Timer.hh"
+#include "TimerQueue.hh"
 #include "fmt/ostream.h"
 #include "spdlog/spdlog.h"
 #include <poll.h>
+
+#include <utility>
 using namespace PD;
 constexpr int kPollTimeoutMS = 2'000;
 static thread_local EventLoop *loopInThisThread = nullptr;
 EventLoop::EventLoop()
     : tid_(std::this_thread::get_id()), looping_(false), quit_(false),
-      poller_(std::make_unique<Poller>(this)) {
+      poller_(std::make_unique<Poller>(this)),
+      timer_queue_(std::make_unique<TimerQueue>(this)) {
   spdlog::info("Loop is created in the tid {}\n", tid_);
   if (loopInThisThread) {
     spdlog::error("Another loop {} is in this thread {}! Abort!",
@@ -64,3 +69,16 @@ void EventLoop::update_channel(Channel *channel) {
   poller_->update_channel(channel);
 }
 void EventLoop::quit() { quit_ = true; }
+TimerProxy EventLoop::runAt(time_point time, TimerCallbackFunc cb) {
+  return timer_queue_->addTimer(cb, time);
+}
+TimerProxy EventLoop::runAfter(double timeS, TimerCallbackFunc cb) {
+  time_point tm = std::chrono::system_clock::now() +
+                  std::chrono::milliseconds(static_cast<int>(timeS * 1000));
+  return runAt(tm, std::move(cb));
+}
+TimerProxy EventLoop::runEvery(double intervalS, TimerCallbackFunc cb) {
+  time_point tm = std::chrono::system_clock::now() +
+                  std::chrono::milliseconds(static_cast<int>(intervalS * 1000));
+  return timer_queue_->addTimer(cb, tm, intervalS);
+}
