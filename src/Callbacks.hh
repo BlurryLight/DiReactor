@@ -7,4 +7,5 @@
 namespace PD {
 using TimerCallbackFunc = std::function<void()>;
 using EventCallbackFunc = std::function<void()>;
+using Functor = std::function<void()>;
 } // namespace PD

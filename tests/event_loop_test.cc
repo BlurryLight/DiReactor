@@ -90,3 +90,30 @@ TEST(EventLoopTests, TimerQueueRunAt) {
                std::chrono::duration_cast<std::chrono::milliseconds>(ts - start)
                    .count());
 }
+TEST(EventLoopTests, runInLoop) {
+  PD::EventLoop loop;
+  auto pid = std::this_thread::get_id();
+  auto func = [&]() {
+    EXPECT_EQ(pid, std::this_thread::get_id());
+    loop.quit();
+  };
+  loop.runAfter(2.0, func);
+  loop.run();
+}
+
+TEST(EventLoopTests, AddTimerInOtherThread) {
+  PD::EventLoop loop;
+  int flag = 0;
+  auto func1 = [&]() {
+    flag = 1;
+    loop.quit();
+  };
+  auto func2 = [&loop, func1]() { loop.runAfter(2.0, func1); };
+  (void)std::async(std::launch::async, func2);
+  auto tp1 = std::chrono::system_clock::now();
+  loop.run();
+  auto tp2 = std::chrono::system_clock::now();
+  EXPECT_EQ(flag, 1);
+  EXPECT_FLOAT_EQ(
+      2.0, std::chrono::duration_cast<std::chrono::seconds>(tp2 - tp1).count());
+}

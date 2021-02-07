@@ -99,7 +99,7 @@ void TimerQueue::reset(std::vector<Entry> &expired, time_point now) {
     reset_timerfd(timerfd_, next_expire);
   }
 }
-bool TimerQueue::insert(std::unique_ptr<Timer> &&timer) {
+bool TimerQueue::insert(std::unique_ptr<Timer> timer) {
   bool earliestChanged = false;
   auto when = timer->expiration();
   auto it = timers_.begin();
@@ -116,12 +116,19 @@ bool TimerQueue::insert(Timer *timer) {
 TimerProxy TimerQueue::addTimer(const TimerCallbackFunc &cb,
                                 time_point expiration, double intervalS) {
 
-  auto timer = std::make_unique<Timer>(cb, expiration, intervalS);
-  auto ptr = timer.get();
+  //这里不能用unique_ptr
+  //因为ptr的生命周期至少应该延长到addTimerInLoop实际发生
+  //也就是可能到下一次事件循环
+  auto ptr = new Timer(cb, expiration, intervalS);
+  loop_->run_in_loop([&]() { addTimerInLoop(ptr); });
+  return TimerProxy(ptr);
+}
+void TimerQueue::addTimerInLoop(Timer *timer) {
+
   loop_->assert_in_thread();
-  bool earliestChanged = insert(std::move(timer));
+  auto expiration = timer->expiration();
+  bool earliestChanged = insert(timer);
   if (earliestChanged) {
     reset_timerfd(timerfd_, expiration);
   }
-  return TimerProxy(ptr);
 }

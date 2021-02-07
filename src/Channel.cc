@@ -44,7 +44,7 @@ void Channel::handle_events() {
   }
   if (revents_ & kWriteEvent) {
     if (writeCb_)
-      writeCb_;
+      writeCb_();
   }
 }
 bool Channel::is_none_event() const { return events_ == kNoneEvent; }

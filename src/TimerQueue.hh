@@ -29,6 +29,7 @@ public:
                       double intervalS = 0.0);
 
 private:
+  void addTimerInLoop(Timer *timer);
   using Entry = std::pair<time_point, std::unique_ptr<Timer>>;
   using TimerList = std::set<Entry>;
 
@@ -37,7 +38,7 @@ private:
   std::vector<Entry> getExpired(time_point now);
   void reset(std::vector<Entry> &expired, time_point now);
   bool insert(Timer *timer);
-  bool insert(std::unique_ptr<Timer> &&timer);
+  bool insert(std::unique_ptr<Timer> timer);
 
   EventLoop *loop_;
   const int timerfd_;
