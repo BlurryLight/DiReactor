@@ -4,6 +4,7 @@
 #include <chrono>
 #define GTEST_UNIT_TEST
 #include "EventLoop.hh"
+#include "EventLoopThread.hh"
 #include <future>
 
 TEST(EventLoopTests, loopInThread) {
@@ -116,4 +117,19 @@ TEST(EventLoopTests, AddTimerInOtherThread) {
   EXPECT_EQ(flag, 1);
   EXPECT_FLOAT_EQ(
       2.0, std::chrono::duration_cast<std::chrono::seconds>(tp2 - tp1).count());
+}
+
+TEST(EventLoopTests, EventLoopThread) {
+  std::weak_ptr<PD::EventLoop> loop;
+  auto pid = std::this_thread::get_id();
+  spdlog::info("Current thread is {}", pid);
+  auto fun = [=]() { EXPECT_NE(std::this_thread::get_id(), pid); };
+  {
+    PD::EventLoopThread loop_thread;
+    loop = loop_thread.run_loop();
+    EXPECT_TRUE(!loop.expired());
+    auto loop_ptr = loop.lock();
+    loop_ptr->run_in_loop(fun);
+  }
+  EXPECT_TRUE(loop.expired());
 }

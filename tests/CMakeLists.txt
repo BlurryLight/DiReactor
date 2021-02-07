@@ -8,6 +8,7 @@ find_package(spdlog REQUIRED)
 
 set(BASE_LIST
         ../src/EventLoop.cc
+        ../src/EventLoopThread.cc
         ../src/Channel.cc
         ../src/Poller.cc
         ../src/TimerQueue.cc
