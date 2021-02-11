@@ -38,8 +38,7 @@ EventLoop::EventLoop()
   } else {
     loopInThisThread = this;
   }
-  wakeup_channel_->set_read_callback(
-      std::bind(&EventLoop::handle_wakeup, this));
+  wakeup_channel_->set_read_callback([this] { handle_wakeup(); });
   wakeup_channel_->enable_reading();
 }
 

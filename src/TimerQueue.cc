@@ -56,8 +56,7 @@ using namespace PD;
 TimerQueue::TimerQueue(EventLoop *loop)
     : loop_(loop), timerfd_(create_timerfd()), timerfdChannel_(loop, timerfd_),
       timers_() {
-  timerfdChannel_.set_read_callback(
-      std::bind(&TimerQueue::handle_timerfd, this));
+  timerfdChannel_.set_read_callback([this] { handle_timerfd(); });
   timerfdChannel_.enable_reading();
 }
 
