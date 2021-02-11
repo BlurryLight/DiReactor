@@ -29,7 +29,7 @@ target_include_directories(runTests PRIVATE
 #target_include_directories(pollertest PRIVATE
 #        ../src/
 #        )
-target_link_libraries(runTests PRIVATE GTest::GTest GTest::gtest_main Threads::Threads spdlog::spdlog)
+target_link_libraries(runTests PRIVATE GTest::GTest gtest_main Threads::Threads spdlog::spdlog)
 #target_link_libraries(pollertest PRIVATE GTest::GTest GTest::gtest_main Threads::Threads spdlog::spdlog)
 add_test(
         NAME runTests

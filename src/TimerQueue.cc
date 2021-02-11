@@ -42,9 +42,14 @@ static void reset_timerfd(int timerfd, PD::time_point expiration) {
   bzero(&new_ts, sizeof new_ts);
   bzero(&old_ts, sizeof old_ts);
   new_ts.it_value = time_from_now(expiration);
+  assert(new_ts.it_value.tv_nsec >= 0);
+  assert(new_ts.it_value.tv_sec >= 0);
   int ret = ::timerfd_settime(timerfd, 0, &new_ts, &old_ts);
   if (ret) {
-    spdlog::error("timerfd_settime()");
+    char buf[128];
+    spdlog::error("timerfd_settime(),error {} ", strerror_r(errno, buf, 128));
+    spdlog::info("new_ts {} {}", new_ts.it_value.tv_sec,
+                 new_ts.it_value.tv_nsec);
   }
 }
 using namespace PD;
@@ -120,7 +125,7 @@ TimerProxy TimerQueue::addTimer(const TimerCallbackFunc &cb,
   //因为ptr的生命周期至少应该延长到addTimerInLoop实际发生
   //也就是可能到下一次事件循环
   auto ptr = new Timer(cb, expiration, intervalS);
-  loop_->run_in_loop([&]() { addTimerInLoop(ptr); });
+  loop_->run_in_loop([ptr, this]() { addTimerInLoop(ptr); });
   return TimerProxy(ptr);
 }
 void TimerQueue::addTimerInLoop(Timer *timer) {

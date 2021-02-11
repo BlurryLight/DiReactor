@@ -62,10 +62,10 @@ TEST(EventLoopTests, TimerQueueRunAfter) {
   // happens > 1234 ms  < 1235 ms
   EXPECT_GE(
       std::chrono::duration_cast<std::chrono::milliseconds>(ts - start).count(),
-      1234);
+      1234 - 25);
   EXPECT_LE(
       std::chrono::duration_cast<std::chrono::milliseconds>(ts - start).count(),
-      1235);
+      1234 + 25);
   spdlog::info("run after {} ms!",
                std::chrono::duration_cast<std::chrono::milliseconds>(ts - start)
                    .count());
@@ -81,12 +81,13 @@ TEST(EventLoopTests, TimerQueueRunAt) {
   auto expected = start + std::chrono::milliseconds{789}; // happen after 789ms
   loop.runAt(expected, func);
   loop.run();
+  // jitter by 25ms
   EXPECT_GE(
       std::chrono::duration_cast<std::chrono::milliseconds>(ts - start).count(),
-      788);
+      789 - 25);
   EXPECT_LE(
       std::chrono::duration_cast<std::chrono::milliseconds>(ts - start).count(),
-      790);
+      789 + 25);
   spdlog::info("run after {} ms!",
                std::chrono::duration_cast<std::chrono::milliseconds>(ts - start)
                    .count());
