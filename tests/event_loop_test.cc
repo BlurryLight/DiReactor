@@ -3,8 +3,11 @@
 #include "gtest/gtest.h"
 #include <chrono>
 #define GTEST_UNIT_TEST
+#include "Acceptor.hh"
 #include "EventLoop.hh"
 #include "EventLoopThread.hh"
+#include "InetAddress.hh"
+#include "SocketUtils.hh"
 #include <future>
 
 TEST(EventLoopTests, loopInThread) {
@@ -133,4 +136,39 @@ TEST(EventLoopTests, EventLoopThread) {
     loop_ptr->run_in_loop(fun);
   }
   EXPECT_TRUE(loop.expired());
+}
+TEST(AcceptorTest, EventLoopThread) {
+  int gval = 0;
+  std::mutex lock;
+  std::condition_variable cv;
+  PD::EventLoopThread loop_thread;
+  auto loop = loop_thread.run_loop();
+  PD::InetAddress listenAddr(10086);
+  PD::Acceptor acceptor(loop.lock().get(), listenAddr);
+  auto conn_callback = [&lock, &cv, &gval](int fd,
+                                           const PD::InetAddress &peer) {
+    spdlog::info("new connection from {}", peer.to_host_port_str());
+    {
+      std::unique_lock<std::mutex> hold(lock);
+      gval = 1;
+      cv.notify_one();
+    }
+    PD::close(fd);
+  };
+  acceptor.set_new_conn_callback(conn_callback);
+  loop.lock()->run_in_loop([&acceptor]() { acceptor.listen(); });
+  while (!acceptor.isListening()) // data race here
+    sleep(1);
+  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  auto server_addr = listenAddr.get_sockaddr_struct();
+  connect(sockfd, (struct sockaddr *)&server_addr, sizeof server_addr);
+  PD::close(sockfd);
+  // data race here, so we sleep 1s
+  sleep(1);
+  {
+    using namespace std::chrono_literals;
+    std::unique_lock<std::mutex> hold(lock);
+    cv.wait_for(hold, 1s, [gval]() { return gval == 0; });
+  }
+  EXPECT_EQ(gval, 1);
 }

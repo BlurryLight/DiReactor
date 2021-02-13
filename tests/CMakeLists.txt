@@ -13,6 +13,11 @@ set(BASE_LIST
         ../src/Poller.cc
         ../src/TimerQueue.cc
         ../src/Timer.cc
+        ../src/Acceptor.cc
+        ../src/SocketUtils.cc
+        ../src/Socket.cc
+        ../src/InetAddress.cc
+        ../src/Acceptor.cc
         )
 set(TESTS_LIST
         # empty
