@@ -15,6 +15,12 @@ inline void Log_Abort(const String &fmt, Args &&...args) {
                 strerror_r(errno, buf, sizeof buf));
   std::abort();
 }
+
+template <typename T> inline T *CHECK_NOT_NULL(T *ptr) {
+  if (!ptr)
+    std::abort();
+  return ptr;
+}
 class Noncopyable {
 public:
   Noncopyable() = default;

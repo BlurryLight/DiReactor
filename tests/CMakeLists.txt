@@ -18,6 +18,8 @@ set(BASE_LIST
         ../src/Socket.cc
         ../src/InetAddress.cc
         ../src/Acceptor.cc
+        ../src/TcpConnection.cc
+        ../src/TcpServer.cc
         )
 set(TESTS_LIST
         # empty

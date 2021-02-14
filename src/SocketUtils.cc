@@ -90,3 +90,13 @@ void PD::bindOrDie(int sockfd, const sockaddr_in &addr) {
     Log_Abort("bind failed!");
   }
 }
+struct sockaddr_in PD::getLocalAddr(int sockfd) {
+  struct sockaddr_in localaddr;
+  bzero(&localaddr, sizeof localaddr);
+
+  socklen_t addrlen = sizeof localaddr;
+  if (::getsockname(sockfd, sockaddr_cast(&localaddr), &addrlen) < 0) {
+    Log_Abort("getsockname failed!");
+  }
+  return localaddr;
+}

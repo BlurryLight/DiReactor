@@ -38,5 +38,6 @@ void EventLoopThread::thread_func() {
   loop->run();
   spdlog::info("Thread func exit!");
   // loop end, must be in ~EventLoopThread
+  // or maybe in quiting
   assert(exiting_);
 }
