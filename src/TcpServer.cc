@@ -19,7 +19,6 @@ TcpServer::TcpServer(EventLoop *loop, const InetAddress &listenAddr)
         newConnection(sockfd, peerAddr);
       });
 }
-TcpServer::~TcpServer() {}
 void TcpServer::start() {
   if (!started_) {
     started_ = true;
@@ -45,5 +44,14 @@ void TcpServer::newConnection(int sockfd, const InetAddress &peerAddr) {
 
   conn->setConnectionCallback(conn_cb_);
   conn->setMessageCallback(msg_cb_);
+  conn->setCloseCallback(
+      [this](const TcpConnectionPtr &ptr) { removeConnection(ptr); });
   conn->connectEstablished();
+}
+void TcpServer::removeConnection(const TcpConnectionPtr &conn) {
+  loop_->assert_in_thread();
+  spdlog::info("TcpServer::removeChannel {} connection.", name_);
+  auto n = connections_.erase(conn->name());
+  assert(n == 1);
+  loop_->queue_in_loop([conn]() { conn->connectDestroyed(); });
 }

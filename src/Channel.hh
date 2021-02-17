@@ -15,6 +15,7 @@ class Channel : public Noncopyable {
 public:
   using EventCallbackFunc = std::function<void()>;
   Channel(EventLoop *loop, int fd);
+  ~Channel();
   int fd() const;
   int events() const;
   // poller will set this to deliver event
@@ -23,10 +24,14 @@ public:
   // poller will set it
   void set_index(int index);
   int enable_reading();
-  //  int enable_writing();
+  int enable_writing();
+  int disable_writing();
   void set_read_callback(const EventCallbackFunc &cb);
   void set_write_callback(const EventCallbackFunc &cb);
   void set_error_callback(const EventCallbackFunc &cb);
+  void set_close_callback(const EventCallbackFunc &cb);
+
+  void disable_all();
   [[nodiscard]] bool is_none_event() const;
   [[nodiscard]] const EventLoop *ownerLoop() const;
   void handle_events();
@@ -41,8 +46,11 @@ private:
   int revents_;
   int index_; // index of Channel in Poller's vector
 
+  bool event_handling_ = false;
+
   EventCallbackFunc readCb_;
   EventCallbackFunc writeCb_;
   EventCallbackFunc errCb_;
+  EventCallbackFunc closeCb_;
 };
 }; // namespace PD

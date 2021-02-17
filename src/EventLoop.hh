@@ -27,6 +27,7 @@ public:
   [[nodiscard]] bool is_in_thread() const;
   void assert_in_thread() const;
   void update_channel(Channel *channel);
+  void removeChannel(Channel *channel);
 
   //=====safe to call from other thread
   void quit();

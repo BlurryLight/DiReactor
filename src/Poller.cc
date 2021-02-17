@@ -51,7 +51,7 @@ void Poller::update_channel(Channel *channel) {
     channels_[channel->fd()] = channel;
   } else {
     assert(channels_.find(channel->fd()) != channels_.end());
-    assert(channels_[channel->index()] == channel);
+    assert(channels_[channel->fd()] == channel);
     int index = channel->index();
     assert(index >= 0 && (index <= pollfds_.size() - 1));
     auto &pfd = pollfds_[index];
@@ -64,5 +64,30 @@ void Poller::update_channel(Channel *channel) {
       // if fd is negative, ::poll will ignore the fd
       pfd.fd = -channel->fd() - 1;
     }
+  }
+}
+void Poller::remove_channel(Channel *channel) {
+  assert_in_loop_thread();
+  spdlog::info("Poller::remove channel, fd is {}", channel->fd());
+  assert(channels_.find(channel->fd()) != channels_.end());
+  assert(channels_[channel->fd()] == channel);
+  assert(channel->is_none_event());
+  int index = channel->index();
+  assert(index >= 0 && index < pollfds_.size());
+  auto pfd = pollfds_[index];
+  assert(pfd.fd == -channel->fd() - 1 && pfd.events == channel->events());
+  size_t n = channels_.erase(channel->fd());
+  assert(n == 1);
+  if (index == pollfds_.size() - 1) {
+    pollfds_.pop_back();
+  } else {
+    int channel_end_fd = pollfds_.back().fd;
+    std::swap(*(pollfds_.begin() + index), *(pollfds_.end() - 1));
+    auto positive_fd = channel_end_fd;
+    if (channel_end_fd < 0) {
+      positive_fd = -(channel_end_fd + 1);
+    }
+    channels_[positive_fd]->set_index(index);
+    pollfds_.pop_back();
   }
 }

@@ -24,6 +24,7 @@ public:
   ~Poller() = default;
   time_point poll(int timeoutMS, std::vector<Channel *> &activeChannels);
   void update_channel(Channel *channel);
+  void remove_channel(Channel *channel);
   void assert_in_loop_thread();
 
 private:

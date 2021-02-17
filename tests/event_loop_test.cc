@@ -214,7 +214,6 @@ TEST(TcpServerTest, discard) {
   PD::InetAddress listenAddr(10086);
   PD::TcpServer server(loop.lock().get(), listenAddr);
   auto conn_callback = [](const PD::TcpConnectionPtr &conn) {
-    EXPECT_TRUE(conn->connected());
     spdlog::info("On connection() : new connection {} from {}", conn->name(),
                  conn->peerAddress().to_host_port_str());
   };
@@ -227,22 +226,26 @@ TEST(TcpServerTest, discard) {
     EXPECT_EQ(len, 6);
     EXPECT_STREQ(buf, "Hello");
   };
-
   server.setConnectionCallback(conn_callback);
   server.setMessageCallback(msg_callback);
   server.start();
   sleep(1);
-  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  auto server_addr = listenAddr.get_sockaddr_struct();
-  connect(sockfd, (struct sockaddr *)&server_addr, sizeof server_addr);
-  std::string str("Hello\0", 6);
-  EXPECT_EQ(str.size(), 6);
-  int n = send(sockfd, str.data(), str.size(), 0);
-  EXPECT_EQ(str.size(), n);
-  sleep(3);
-  //  loop.lock()->quit();
-  EXPECT_EQ(msg_flag, 1);
-  //  PD::close(sockfd);
+
+  // client
+  {
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    auto server_addr = listenAddr.get_sockaddr_struct();
+    connect(sockfd, (struct sockaddr *)&server_addr, sizeof server_addr);
+    std::string str("Hello\0", 6);
+    EXPECT_EQ(str.size(), 6);
+    int n = send(sockfd, str.data(), str.size(), 0);
+    sleep(2);
+    EXPECT_EQ(str.size(), n);
+    //  loop.lock()->quit();
+    EXPECT_EQ(msg_flag, 1);
+    PD::close(sockfd);
+  }
+  sleep(2);
   // will abort here
   // Tcpserver析构的时候带着conn析构了，但是channel仍然注册在Eventloop里面
 }

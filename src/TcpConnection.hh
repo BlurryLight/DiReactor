@@ -27,15 +27,21 @@ public:
   const InetAddress &peerAddress() const { return peerAddr_; }
   bool connected() const { return state_ == kConnected; }
   void setConnectionCallback(const ConnectionCallback &cb) { conn_cb_ = cb; }
-
   void setMessageCallback(const MessageCallback &cb) { msg_cb_ = cb; }
 
+  // internal
+  void setCloseCallback(const CloseCallback &cb) { close_cb_ = cb; }
+
   void connectEstablished(); // assert only once
+  void connectDestroyed();   // assert only once
 
 private:
-  enum State { kConnecting, kConnected };
+  enum State { kConnecting, kConnected, kDisconnected };
   void setState(State e) { state_ = e; }
   void handleRead();
+  void handleWrite() {}
+  void handleClose();
+  void handleError();
   EventLoop *loop_;
   std::atomic<State> state_;
   std::string name_;
@@ -45,6 +51,7 @@ private:
   InetAddress peerAddr_;
   ConnectionCallback conn_cb_;
   MessageCallback msg_cb_;
+  CloseCallback close_cb_;
 };
 
 } // namespace PD

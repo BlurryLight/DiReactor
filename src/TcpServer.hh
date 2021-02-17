@@ -14,7 +14,7 @@ class Acceptor;
 class TcpServer : public Noncopyable {
 public:
   TcpServer(EventLoop *loop, const InetAddress &listenAddr);
-  ~TcpServer();
+  ~TcpServer() = default;
 
   void start();
 
@@ -27,6 +27,7 @@ private:
   // assert in loop
   // spawn a TcpConnection object
   void newConnection(int sockfd, const InetAddress &peerAddr);
+  void removeConnection(const TcpConnectionPtr &conn);
 
   using ConnectionMap = std::map<std::string, TcpConnectionPtr>;
   EventLoop *loop_;

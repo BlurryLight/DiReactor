@@ -149,3 +149,8 @@ void EventLoop::queue_in_loop(const Functor &func) {
     wakeup();
   }
 }
+void EventLoop::removeChannel(Channel *channel) {
+  assert(channel->ownerLoop() == this);
+  assert_in_thread();
+  poller_->remove_channel(channel);
+}

@@ -100,3 +100,11 @@ struct sockaddr_in PD::getLocalAddr(int sockfd) {
   }
   return localaddr;
 }
+int PD::getSocketError(int sockfd) {
+  int optval = 0;
+  socklen_t optlen = sizeof optval;
+  if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0) {
+    return errno;
+  }
+  return optval;
+}
